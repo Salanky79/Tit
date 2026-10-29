@@ -1,11 +1,10 @@
 import os              
-import sqlite3          # Kết nối và thao tác database SQLite (không cần cài server riêng)
+import sqlite3          # Kết nối và thao tác database SQLite
 from pathlib import Path  
 
-from dotenv import load_dotenv  # Đọc file .env và nạp API key, config vào os.environ
+from dotenv import load_dotenv  
 import certifi                  # Cung cấp chứng chỉ SSL/TLS chuẩn để verify HTTPS an toàn
 
-# Tải các biến môi trường từ file .env (ví dụ: GEMINI_API_KEY, TAVILY_API_KEY,...)
 load_dotenv()
 
 # Trỏ chứng chỉ SSL đến file chứng chỉ của certifi để tránh lỗi SSL khi gọi API bên ngoài
@@ -20,7 +19,6 @@ from langgraph.graph import StateGraph, START, MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
 # SqliteSaver: Lưu trạng thái và lịch sử hội thoại vào SQLite để duy trì ngữ cảnh nhiều lượt chat
 from langgraph.checkpoint.sqlite import SqliteSaver
-# Danh sách các công cụ hỗ trợ của agent (web search, calculator, memory, RAG...) được định nghĩa từ file tools.py
 from tools import tools
 
 
@@ -28,18 +26,15 @@ Path("data").mkdir(exist_ok=True)
 
 
 # Update default and allowed models to use Gemini 2.5
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 ALLOWED_MODELS = {
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-2.5-flash-lite", # Phiên bản gọn nhẹ, tốc độ cao
-    "gemini-1.5-flash",      # Giữ lại để dự phòng / tương thích ngược
-    "gemini-1.5-pro"
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b"
 }
 
 
-# Lời nhắc hệ thống: Quy định vai trò, nhiệm vụ và các quy tắc ứng xử/gọi tool cho AI Agent
 SYSTEM_PROMPT = """
 You are a helpful Agentic AI assistant named Tit similar to ChatGPT.
 
@@ -91,7 +86,7 @@ def build_agent(model_name: str):
     """
     HÀM 2: KHỞI TẠO VÀ BIÊN DỊCH AGENT CHO MỘT MODEL CỤ THỂ (LangGraph Agent Builder)
     - Tác dụng:
-      + Tạo kết nối với mô hình Gemini đã chọn thông qua ChatGoogleGenerativeAI.
+      + Tạo kết nối với mô hình GROQ đã chọn thông qua ChatGroq.
       + Gắn (bind) danh sách các công cụ (tools) vào model để mô hình biết nó có thể gọi tool nào.
       + Xây dựng đồ thị trạng thái hội thoại (StateGraph):
         * chatbot_node: Node tiếp nhận tin nhắn, ghép System Prompt và gọi LLM trả lời hoặc yêu cầu gọi tool.
@@ -145,7 +140,7 @@ def build_agent(model_name: str):
     # 1. Bắt đầu từ START -> đi vào node 'chatbot'
     workflow.add_edge(START, "chatbot")
     # 2. Điều kiện rẽ nhánh: nếu LLM yêu cầu gọi tool -> chuyển sang node 'tools', nếu không -> kết thúc lượt
-    workflow.add_conditional_edges("chatbot", tools_condition)
+    workflow.add_conditional_edges("chatbot", tools_condition) # mac dinh tim node ten la tools
     # 3. Sau khi node 'tools' chạy xong -> trả kết quả về lại node 'chatbot' để LLM đọc và trả lời người dùng
     workflow.add_edge("tools", "chatbot")
 
