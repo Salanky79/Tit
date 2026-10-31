@@ -11,7 +11,7 @@ load_dotenv()
 os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 # Định dạng tin nhắn hệ thống (System Prompt) cho mô hình
 from langchain_core.messages import SystemMessage
 from langgraph.graph import StateGraph, START, MessagesState
@@ -101,8 +101,8 @@ def build_agent(model_name: str):
     # Đảm bảo tên model luôn hợp lệ
     selected_model = normalize_model_name(model_name)
 
-    # Initialize ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(
+    # Initialize ChatGroq
+    llm = ChatGroq(
         model=selected_model,
         temperature=0.3,    # Giảm tính sáng tạo ngẫu nhiên, ưu tiên câu trả lời chính xác, bám sát sự thật
         streaming=True       # Hỗ trợ stream phản hồi theo thời gian thực về giao diện
